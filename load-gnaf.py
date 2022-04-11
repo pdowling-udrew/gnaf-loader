@@ -710,7 +710,7 @@ def boundary_tag_gnaf(pg_cur):
                                      OWNER TO {settings.pg_user}""")
         pg_cur.execute("".join(create_table_list))
 
-    # Step 1 of 7 : tag gnaf addresses with admin boundary IDs, using multiprocessing
+    # Step 1 of 8 : tag gnaf addresses with admin boundary IDs, using multiprocessing
     start_time = datetime.now()
 
     # create temp tables
@@ -735,10 +735,10 @@ def boundary_tag_gnaf(pg_cur):
     if sql_list is not None:
         geoscape.multiprocess_list("sql", sql_list, logger)
 
-    logger.info(f"\t- Step 1 of 7 : principal addresses tagged with admin boundary IDs: {datetime.now() - start_time}")
+    logger.info(f"\t- Step 1 of 8 : principal addresses tagged with admin boundary IDs: {datetime.now() - start_time}")
     start_time = datetime.now()
 
-    # Step 2 of 7 : delete invalid matches, create indexes and analyse tables
+    # Step 2 of 8 : delete invalid matches, create indexes and analyse tables
     sql_list = list()
     for table in table_list:
         sql = f"""DELETE FROM {settings.gnaf_schema}.temp_{table[0]}_tags 
@@ -749,11 +749,11 @@ def boundary_tag_gnaf(pg_cur):
         sql_list.append(sql)
     geoscape.multiprocess_list("sql", sql_list, logger)
 
-    logger.info(f"\t- Step 2 of 7 : principal addresses - invalid matches deleted & bdy tag indexes created : "
+    logger.info(f"\t- Step 2 of 8 : principal addresses - invalid matches deleted & bdy tag indexes created : "
                 f"{datetime.now() - start_time}")
     start_time = datetime.now()
 
-    # Step 3 of 7 : insert boundary tagged addresses
+    # Step 3 of 8 : insert boundary tagged addresses
 
     # create insert statement for multiprocessing
     insert_field_list = list()
@@ -798,20 +798,20 @@ def boundary_tag_gnaf(pg_cur):
     # get stats
     pg_cur.execute(f"ANALYZE {settings.gnaf_schema}.address_principal_admin_boundaries ")
 
-    logger.info(f"\t- Step 3 of 7 : principal addresses - bdy tags added to output table : "
+    logger.info(f"\t- Step 3 of 8 : principal addresses - bdy tags added to output table : "
                 f"{datetime.now() - start_time}")
 
     start_time = datetime.now()
 
-    # Step 4 of 7 : add index to output table
+    # Step 4 of 8 : add index to output table
     sql = f"CREATE INDEX address_principal_admin_boundaries_gnaf_pid_idx " \
           f"ON {settings.gnaf_schema}.address_principal_admin_boundaries USING btree (gnaf_pid)"
     pg_cur.execute(sql)
 
-    logger.info(f"\t- Step 4 of 7 : created index on bdy tagged address table : {datetime.now() - start_time}")
+    logger.info(f"\t- Step 4 of 8 : created index on bdy tagged address table : {datetime.now() - start_time}")
     start_time = datetime.now()
 
-    # Step 5 of 7 : log duplicates - happens when 2 boundaries overlap by a very small amount
+    # Step 5 of 8 : log duplicates - happens when 2 boundaries overlap by a very small amount
     # (can be ignored if there's a small number of records affected)
     sql = f"""SELECT gnaf_pid FROM (
                   SELECT Count(*) AS cnt, gnaf_pid 
@@ -832,21 +832,26 @@ def boundary_tag_gnaf(pg_cur):
             gnaf_pids.append("\t\t" + duplicate[0])
 
         if len(gnaf_pids) > 0:
-            logger.warning("\t- Step 5 of 7 : found boundary tag duplicates : {datetime.now() - start_time}")
+            logger.warning("\t- Step 5 of 8 : found boundary tag duplicates : {datetime.now() - start_time}")
             logger.warning("\n".join(gnaf_pids))
         else:
-            logger.info("\t- Step 5 of 7 : no boundary tag duplicates : {datetime.now() - start_time}")
+            logger.info("\t- Step 5 of 8 : no boundary tag duplicates : {datetime.now() - start_time}")
     else:
-        logger.info("\t- Step 5 of 7 : no boundary tag duplicates : {datetime.now() - start_time}")
+        logger.info("\t- Step 5 of 8 : no boundary tag duplicates : {datetime.now() - start_time}")
 
-    # Step 6 of 7 : Copy principal boundary tags to alias addresses
-    pg_cur.execute(geoscape.open_sql_file("04-06-bdy-tags-for-alias-addresses.sql"))
-    logger.info("\t- Step 6 of 7 : alias addresses boundary tagged : {datetime.now() - start_time}")
+    # Step 6 of 8 : Manually fix NULL boundary tags
+    pg_cur.execute(geoscape.open_sql_file("04-06-manual-bdy-tags.sql"))
+    logger.info("\t- Step 6 of 8 : NULL boundary tags manually fixed : {datetime.now() - start_time}")
     start_time = datetime.now()
 
-    # Step 7 of 7 : Create view of all bdy tags
-    pg_cur.execute(geoscape.open_sql_file("04-07-create-bdy-tag-view.sql"))
-    logger.info("\t- Step 7 of 7 : boundary tagged address view created : {datetime.now() - start_time}")
+    # Step 7 of 8 : Copy principal boundary tags to alias addresses
+    pg_cur.execute(geoscape.open_sql_file("04-07-bdy-tags-for-alias-addresses.sql"))
+    logger.info("\t- Step 7 of 8 : alias addresses boundary tagged : {datetime.now() - start_time}")
+    start_time = datetime.now()
+
+    # Step 8 of 8 : Create view of all bdy tags
+    pg_cur.execute(geoscape.open_sql_file("04-08-create-bdy-tag-view.sql"))
+    logger.info("\t- Step 8 of 8 : boundary tagged address view created : {datetime.now() - start_time}")
 
 
 def create_qa_tables(pg_cur):
