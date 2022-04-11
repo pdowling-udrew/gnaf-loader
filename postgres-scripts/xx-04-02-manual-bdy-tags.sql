@@ -1,31 +1,30 @@
 
-
 -- manual fixes for addresses with no LGA (these are mostly valid nulls. e.g. ACT has no councils)
 -- 149 addresses (as at 202202 will not be fixed -- these are all offshore points, a number being oyster leases and boat moorings
 
 -- all of ACT -- 232,665 rows
 update gnaf_202202.address_principal_admin_boundaries
 set lga_pid = 'lgaact9999991',
-    lga_name = 'Unincorporated ACT'
+    lga_name = 'Unincorporated - ACT'
 where state = 'ACT'
 ;
 
 -- Specific localities
 update gnaf_202202.address_principal_admin_boundaries
 set lga_pid = 'lgaot9999991',
-    lga_name = 'Unincorporated OT (Norfolk Island)'
+    lga_name = 'Unincorporated - Norfolk Island'
 where locality_pid = 'locc15e0d2d6f2a'
   and lga_pid is null;
 
 update gnaf_202202.address_principal_admin_boundaries
 set lga_pid = 'lgaot9999992',
-    lga_name = 'Unincorporated OT (Jervis Bay)'
+    lga_name = 'Unincorporated - Jervis Bay'
 where locality_pid = 'loced195c315de9'
   and lga_pid is null;
 
 update gnaf_202202.address_principal_admin_boundaries
 set lga_pid = 'lgasa9999991',
-    lga_name = 'Unincorporated SA (Thistle Island)'
+    lga_name = 'Unincorporated - Thistle Island'
 where locality_pid = '250190776'
   and lga_pid is null;
 
@@ -51,4 +50,12 @@ where locality_pid = 'loc552bd3aef1b8'
   and lga_pid is null;
 
 
-select * from gnaf_202202.address_principal_admin_boundaries;
+analyse gnaf_202202.address_principal_admin_boundaries;
+
+
+-- select count(*),
+--        lga_name
+-- from gnaf_202202.address_principal_admin_boundaries
+-- where upper(lga_name) like 'UNINCORP%'
+-- group by lga_name
+-- ;
